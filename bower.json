@@ -13,14 +13,14 @@
     "tests"
   ],
   "dependencies": {
-    "purescript-aff": "^5.0.2",
-    "purescript-datetime": "^4.1.0",
-    "purescript-foldable-traversable": "^4.1.1",
-    "purescript-foreign": "^5.0.0",
-    "purescript-string-parsers": "^5.0.0",
-    "purescript-uri": "^6.0.0",
-    "purescript-transformers": "^4.1.0",
-    "purescript-argonaut": "^5.0.0"
+    "purescript-aff": "^6.0.0",
+    "purescript-datetime": "^5.0.2",
+    "purescript-foldable-traversable": "^5.0.1",
+    "purescript-foreign": "^6.0.1",
+    "purescript-string-parsers": "^6.0.1",
+    "purescript-uri": "^8.0.1",
+    "purescript-transformers": "^5.2.0",
+    "purescript-argonaut": "^8.0.0"
   },
   "homepage": "https://github.com/dicefm/purescript-node-mongodb",
   "authors": [
@@ -37,7 +37,7 @@
   ],
   "license": "MIT",
   "devDependencies": {
-    "purescript-debug": "^4.0.0",
-    "purescript-assert": "^4.0.0"
+    "purescript-debug": "^5.0.0",
+    "purescript-assert": "^5.0.0"
   }
 }

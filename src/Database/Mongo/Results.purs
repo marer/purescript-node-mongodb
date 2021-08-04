@@ -2,12 +2,12 @@ module Database.Mongo.Results
   ( WriteResult()
   ) where
 
-import Prelude (pure, bind, ($))
 import Data.Argonaut.Core (jsonEmptyObject)
+import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.:))
 import Data.Argonaut.Encode (class EncodeJson, (:=), (~>))
-import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.?))
-import Data.Either (Either(..))
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Either (hush)
+import Data.Maybe (Maybe, fromMaybe)
+import Prelude (pure, bind, ($))
 
 newtype WriteResult = WriteResult
   { success  :: Boolean
@@ -19,11 +19,11 @@ newtype WriteResult = WriteResult
 instance decodeJsonWriteResult :: DecodeJson WriteResult where
   decodeJson json = do
     obj      <- decodeJson json
-    ok       <- obj .? "ok"
-    n        <- obj .? "n"
+    ok       <- obj .: "ok"
+    n        <- obj .: "n"
 
-    let inserted = extract $ obj .? "nInserted"
-    let modified = extract $ obj .? "nModified"
+    let inserted = hush $ obj .: "nInserted"
+    let modified = hush $ obj .: "nModified"
 
     pure $ WriteResult
       { success  : jsNumberToBool ok
@@ -51,7 +51,3 @@ jsNumberToBool e = case e of
   1 -> true
   _ -> false
 
-extract :: Either String Number -> Maybe Number
-extract e = case e of
-  Left _  -> Nothing
-  Right x -> Just x

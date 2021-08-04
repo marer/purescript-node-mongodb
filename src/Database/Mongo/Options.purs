@@ -8,7 +8,7 @@ module Database.Mongo.Options
 
 import Prelude (pure, bind, ($))
 import Data.Argonaut.Encode (class EncodeJson, (:=), (~>), encodeJson)
-import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.?))
+import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.:))
 import Data.Argonaut.Core (Json(), jsonEmptyObject)
 import Data.Maybe (Maybe(..))
 
@@ -33,8 +33,8 @@ insertOptions = encodeJson
 instance decodeJsonInsertOptions :: DecodeJson InsertOptions where
   decodeJson json = do
     obj  <- decodeJson json
-    w    <- obj .? "w"
-    j    <- obj .? "j"
+    w    <- obj .: "w"
+    j    <- obj .: "j"
     pure $ InsertOptions
       { writeConcern : w
       , journaled    : j
@@ -66,9 +66,9 @@ updateOptions = encodeJson
 instance decodeJsonUpdateOptions :: DecodeJson UpdateOptions where
   decodeJson json = do
     obj    <- decodeJson json
-    w      <- obj .? "w"
-    j      <- obj .? "j"
-    upsert <- obj .? "upsert"
+    w      <- obj .: "w"
+    j      <- obj .: "j"
+    upsert <- obj .: "upsert"
     pure $ UpdateOptions
       { writeConcern : w
       , journaled    : j
