@@ -1,5 +1,5 @@
 module Database.Mongo.Mongo
-  ( 
+  (
   Client(), Database(), Collection(), Cursor()
   , AffDatabase(), AffCollection(), AffCursor()
   , AffResult(), AffUnit(), AffWriteResult()
@@ -14,7 +14,7 @@ module Database.Mongo.Mongo
   , collectOne, collectOne'
   , insertOne, insertOne'
   , insertMany, insertMany'
-  , updateOne, updateOne'
+  , updateOne, updateOne', updateOne''
   , updateMany, updateMany'
   ) where
 
@@ -71,7 +71,7 @@ instance showMethodType :: Show FnType where
 connect :: String -> AffClient
 connect = makeAff <<< connect'
 
--- | Get default database from client 
+-- | Get default database from client
 defaultDb :: Client -> Database
 defaultDb = runFn1 _defaultDb
 
@@ -79,7 +79,7 @@ defaultDb = runFn1 _defaultDb
 db :: String -> Json -> Client -> Database
 db = runFn3 _db
 
--- | Get database from client by name 
+-- | Get database from client by name
 db' :: String -> Client -> Database
 db' = runFn2 __db
 
@@ -112,47 +112,51 @@ insertOne :: forall a. (EncodeJson a) => a -> InsertOptions -> Collection -> Aff
 insertOne j o c = makeAff $ insertOne' j o c
 
 -- | Insert new documents using the selector, returning the write result
-insertMany :: forall a. (EncodeJson a) => a -> InsertOptions -> Collection -> AffWriteResult 
+insertMany :: forall a. (EncodeJson a) => a -> InsertOptions -> Collection -> AffWriteResult
 insertMany j o c = makeAff $ insertMany' j o c
 
 -- | Update a new document using the selector, returning the write result
-updateOne :: Document -> Fields -> UpdateOptions -> Collection -> AffWriteResult 
+updateOne :: Document -> Fields -> UpdateOptions -> Collection -> AffWriteResult
 updateOne s j o c = makeAff $ updateOne' s j o c
 
+-- | Update a new document using the selector, returning the write result
+updateOne'' :: forall a. EncodeJson a => Selector -> a -> UpdateOptions -> Collection -> AffWriteResult
+updateOne'' s j o c = makeAff $ _updateOne s (encodeJson j) o c
+
 -- | Update documents using the selector, returning the write result
-updateMany :: Document -> Fields -> UpdateOptions -> Collection -> AffWriteResult 
+updateMany :: Document -> Fields -> UpdateOptions -> Collection -> AffWriteResult
 updateMany s j o c = makeAff $ updateMany' s j o c
 
 -- | Run a request directly without using 'Aff'
-connect' :: String 
+connect' :: String
         -> (Either Error Client -> Effect Unit)
         -> Effect Canceler
 connect' s cb = do
   case runParser s (parser uriOptions) of
-    Left err -> 
+    Left err ->
       runFn3 _handleParseFailure (err' err) ignoreCancel eb
-    Right x  -> 
+    Right x  ->
       runFn5 _connect (print uriOptions x) ignoreCancel cb Left Right
   where
     err' :: ParseError -> Error
     err' e = error $ show e
 
-    eb :: Error -> Effect Unit 
+    eb :: Error -> Effect Unit
     eb = cb <<< Left
 
-close' 
+close'
   :: Client
   -> (Either Error Unit -> Effect Unit)
   -> Effect Canceler
-close' client cb = 
+close' client cb =
   runFn5 _close client ignoreCancel cb Left Right
 
 collection' :: String
             -> Database
             -> (Either Error Collection -> Effect Unit)
             -> Effect Canceler
-collection' name d cb = 
-  runFn6 _collection name d ignoreCancel cb Left Right 
+collection' name d cb =
+  runFn6 _collection name d ignoreCancel cb Left Right
 
 findOne' :: forall a. (DecodeJson a)
                   => Selector
@@ -160,25 +164,25 @@ findOne' :: forall a. (DecodeJson a)
                   -> Collection
                   -> (Either Error a -> Effect Unit)
                   -> Effect Canceler
-findOne' s h c cb = 
+findOne' s h c cb =
   runFn7 _findOne (printBson s) (printBson h) c ignoreCancel cb' Left Right
   where
     cb' = decodeCallback cb
 
-find' 
+find'
   :: Selector
   -> Fields
   -> Collection
   -> (Either Error Cursor -> Effect Unit)
   -> Effect Canceler
-find' s h c cb = 
+find' s h c cb =
   runFn7 _find (printBson s) (printBson h) c ignoreCancel cb Left Right
 
 collect' :: forall a. (DecodeJson a)
                     => Cursor
                     -> (Either Error a -> Effect Unit)
                     -> Effect Canceler
-collect' c cb = 
+collect' c cb =
   runFn5 _collect c ignoreCancel cb' Left Right
   where
     cb' = decodeCallback cb
@@ -188,10 +192,10 @@ collectOne' :: forall a
                 => Cursor
                 -> (Either Error a -> Effect Unit)
                 -> Effect Canceler
-collectOne' c cb = 
+collectOne' c cb =
   runFn5 _collectOne c ignoreCancel cb' Left Right
   where
-    cb' = decodeCallback cb 
+    cb' = decodeCallback cb
 
 insertOne' :: forall a
             . (EncodeJson a)
@@ -200,7 +204,7 @@ insertOne' :: forall a
             -> Collection
             -> (Either Error WriteResult -> Effect Unit)
             -> Effect Canceler
-insertOne' j o c cb = 
+insertOne' j o c cb =
   runFn8 _insert fnTypeOne j' o' c ignoreCancel cb' Left Right
   where
     j' = encodeJson j
@@ -214,35 +218,43 @@ insertMany' :: forall a
             -> Collection
             -> (Either Error WriteResult -> Effect Unit)
             -> Effect Canceler
-insertMany' j o c cb = 
-  runFn8 _insert fnTypeMany j' (insertOptions o) c ignoreCancel cb' Left Right
+insertMany' j o c cb =
+  runFn8 _insert fnTypeMany j' o' c ignoreCancel cb' Left Right
   where
     j' = encodeJson j
     o' = insertOptions o
     cb' = decodeCallback cb
 
-updateOne' 
+updateOne'
   :: Selector
   -> Fields
   -> UpdateOptions
   -> Collection
   -> (Either Error WriteResult -> Effect Unit)
   -> Effect Canceler
-updateOne' s j o c cb = 
-  runFn9 _update fnTypeOne (printBson s) j' o' c ignoreCancel cb' Left Right
+updateOne' s j o c cb = _updateOne s (printBson j) o c cb
+
+_updateOne
+  :: Selector
+  -> Json
+  -> UpdateOptions
+  -> Collection
+  -> (Either Error WriteResult -> Effect Unit)
+  -> Effect Canceler
+_updateOne s j o c cb =
+  runFn9 _update fnTypeOne (printBson s) j o' c ignoreCancel cb' Left Right
   where
-    j' = printBson j
     o' = updateOptions o
     cb' = decodeCallback cb
 
-updateMany' 
+updateMany'
   :: Selector
   -> Fields
   -> UpdateOptions
   -> Collection
   -> (Either Error WriteResult -> Effect Unit)
   -> Effect Canceler
-updateMany' s j o c cb = 
+updateMany' s j o c cb =
   runFn9 _update fnTypeMany (printBson s) j' o' c ignoreCancel cb' Left Right
   where
     j' = printBson j
@@ -268,18 +280,18 @@ uriOptions =
   }
 
 
-decodeCallback 
-  :: forall a 
+decodeCallback
+  :: forall a
   . (DecodeJson a)
-  => (Either Error a -> Effect Unit) 
-  -> Either Error Json 
+  => (Either Error a -> Effect Unit)
+  -> Either Error Json
   -> Effect Unit
-decodeCallback cb val = cb $ case val of 
+decodeCallback cb val = cb $ case val of
   Left err -> Left err
-  Right res -> lmap (error <<< show) (decodeJson res) 
-  
+  Right res -> lmap (error <<< show) (decodeJson res)
+
 -- | Always ignore the cancel.
-ignoreCancel :: forall a. a -> Canceler 
+ignoreCancel :: forall a. a -> Canceler
 ignoreCancel _ = nonCanceler
 
 

@@ -2,12 +2,13 @@ module Database.Mongo.Results
   ( WriteResult()
   ) where
 
+
+import Prelude
 import Data.Argonaut.Core (jsonEmptyObject)
 import Data.Argonaut.Decode (class DecodeJson, decodeJson, (.:))
 import Data.Argonaut.Encode (class EncodeJson, (:=), (~>))
 import Data.Either (hush)
 import Data.Maybe (Maybe, fromMaybe)
-import Prelude (pure, bind, ($))
 
 newtype WriteResult = WriteResult
   { success  :: Boolean
@@ -39,6 +40,9 @@ instance encodeJsonWriteResult :: EncodeJson WriteResult where
     ~> "nInserted" := fromMaybe 0.0 w.inserted
     ~> "nModified" := fromMaybe 0.0 w.modified
     ~> jsonEmptyObject
+
+derive newtype instance showWriteResult :: Show WriteResult
+derive newtype instance eqWriteResult :: Eq WriteResult
 
 boolToJsNumber :: Boolean -> Int
 boolToJsNumber false = 0
